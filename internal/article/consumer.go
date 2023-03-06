@@ -5,5 +5,5 @@ import (
 )
 
 type Consumer interface {
-	List(ctx context.Context)
+	Consume(ctx context.Context)
 }

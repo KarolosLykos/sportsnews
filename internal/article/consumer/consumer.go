@@ -16,6 +16,7 @@ import (
 
 var (
 	ErrGetByID   = errors.New("consumer: getByID")
+	ErrList      = errors.New("consumer: list")
 	ErrBadStatus = errors.New("bad status code")
 )
 
@@ -68,25 +69,35 @@ func (c *HullCityConsumer) GetByID(ctx context.Context, id string) (*domain.Hull
 
 	return hullArticle, nil
 }
-
-func (c *HullCityConsumer) List(ctx context.Context) {
+func (c *HullCityConsumer) List(ctx context.Context) (*domain.HullArticles, error) {
 	uri := c.cfg.Consumer.HullConsumer.ListURL + "?count=" + strconv.Itoa(c.cfg.Consumer.HullConsumer.Count)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		c.logger.Error(ctx, err)
-		return
+		return nil, fmt.Errorf("%w:%v", ErrList, err)
 	}
 
 	res, err := c.client.Do(req)
 	if err != nil {
-		c.logger.Error(ctx, err)
-		return
+		return nil, fmt.Errorf("%w:%v", ErrList, err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w:%v", ErrBadStatus, res.Status)
 	}
 
 	defer res.Body.Close()
 
 	hullArticles := &domain.HullArticles{}
 	if err = xml.NewDecoder(res.Body).Decode(hullArticles); err != nil {
+		return nil, fmt.Errorf("%w:%v", ErrList, err)
+	}
+
+	return hullArticles, nil
+}
+
+func (c *HullCityConsumer) Consume(ctx context.Context) {
+	hullArticles, err := c.List(ctx)
+	if err != nil {
 		c.logger.Error(ctx, err)
 		return
 	}

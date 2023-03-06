@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -64,10 +63,12 @@ func (s *Server) Run() error {
 
 	// Setup cron.
 	cron := gocron.NewScheduler(time.UTC)
-	j, err := cron.Every(s.cfg.Consumer.HullConsumer.Frequency).Do(hullCityConsumer.List, ctx)
+	hullJob, err := cron.Every(s.cfg.Consumer.HullConsumer.Frequency).Do(hullCityConsumer.Consume, ctx)
 	if err != nil {
-		fmt.Printf("Job: %v, Error: %v", j, err)
+		s.logger.Warnf(ctx, err, "Job: %v, Error: %v", hullJob, err)
+		cancel()
 	}
+
 	cron.StartAsync()
 
 	s.httpServer = s.createHTTP(articleUC)
@@ -90,7 +91,6 @@ func (s *Server) Run() error {
 	}
 
 	// Gracefully shutdown servers.
-
 	s.gracefullyShutdown(ctx)
 	cron.Stop()
 

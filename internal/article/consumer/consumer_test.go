@@ -88,6 +88,77 @@ func TestHullCityConsumer_GetByID(t *testing.T) {
 	}
 }
 
+func TestHullCityConsumer_List(t *testing.T) {
+	log := getLogger()
+
+	cfg := &config.Config{Consumer: config.ConsumerConfig{HullConsumer: config.HullConsumer{
+		ListURL: "list",
+		Count:   3,
+	}}}
+
+	testArticles := &domain.HullArticles{
+		ClubName:       "clubname",
+		ClubWebsiteURL: "club.com",
+		NewsletterNewsItems: struct {
+			NewsletterNewsItem []domain.HullArticle `xml:"NewsletterNewsItem"`
+		}{
+			[]domain.HullArticle{
+				{ArticleURL: "test1.com", Title: "test title1"},
+				{ArticleURL: "test2.com", Title: "test title2"},
+				{ArticleURL: "test3.com", Title: "test title3"},
+			},
+		},
+	}
+
+	tt := []struct {
+		name      string
+		responder httpmock.Responder
+		err       error
+	}{
+		{
+			name:      "ok",
+			responder: httpmock.NewStringResponder(http.StatusOK, testXMLList),
+			err:       nil,
+		},
+		{
+			name:      "invalid xml response",
+			responder: httpmock.NewStringResponder(http.StatusOK, "{}"),
+			err:       ErrList,
+		},
+		{
+			name:      "bad status code",
+			responder: httpmock.NewStringResponder(http.StatusBadRequest, "{}"),
+			err:       ErrBadStatus,
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			httpmock.Activate()
+			defer httpmock.DeactivateAndReset()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			repo := mock.NewMockRepository(ctrl)
+			cache := mock.NewMockCache(ctrl)
+
+			httpmock.RegisterResponder(http.MethodGet, "list?count=3", tc.responder)
+
+			c := NewHullCityConsumer(cfg, log, &http.Client{}, repo, cache)
+
+			a, err := c.List(context.Background())
+			if err != nil && tc.err != nil {
+				assert.ErrorContains(t, err, tc.err.Error())
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, a)
+				assert.Equal(t, testArticles, a)
+			}
+		})
+	}
+}
+
 func getLogger() logger.Logger {
 	cfg := &config.Config{}
 
@@ -114,4 +185,23 @@ var (
 <Subtitle>test subtitle</Subtitle>
 </NewsArticle>
 </NewsArticleInformation>`
+
+	testXMLList = `<NewListInformation>
+<ClubName>clubname</ClubName>
+<ClubWebsiteURL>club.com</ClubWebsiteURL>
+<NewsletterNewsItems>
+<NewsletterNewsItem>
+<ArticleURL>test1.com</ArticleURL>
+<Title>test title1</Title>
+</NewsletterNewsItem>
+<NewsletterNewsItem>
+<ArticleURL>test2.com</ArticleURL>
+<Title>test title2</Title>
+</NewsletterNewsItem>
+<NewsletterNewsItem>
+<ArticleURL>test3.com</ArticleURL>
+<Title>test title3</Title>
+</NewsletterNewsItem>
+</NewsletterNewsItems>
+</NewListInformation>`
 )
