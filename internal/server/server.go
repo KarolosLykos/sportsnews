@@ -104,6 +104,24 @@ func (s *Server) createHTTP(
 	e := echo.New()
 	e.Logger.SetOutput(io.Discard)
 	e.Use(middleware.Recover())
+	middleware.Logger()
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogStatus: true,
+		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+			s.logger.Infof(
+				c.Request().Context(),
+				"Status: %d, Method: %s, Time: %v, Uri: %v, Err: %v",
+				values.Status,
+				c.Request().Method,
+				time.Since(values.StartTime),
+				values.URI,
+				values.Error,
+			)
+
+			return nil
+		},
+	}))
 
 	articleHandler := v1.NewArticleHandler(s.logger, uc)
 

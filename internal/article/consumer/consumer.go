@@ -18,6 +18,8 @@ var (
 	ErrGetByID   = errors.New("consumer: getByID")
 	ErrList      = errors.New("consumer: list")
 	ErrBadStatus = errors.New("bad status code")
+
+	maxWorkers = 30
 )
 
 type HullCityConsumer struct {
@@ -69,6 +71,7 @@ func (c *HullCityConsumer) GetByID(ctx context.Context, id string) (*domain.Hull
 
 	return hullArticle, nil
 }
+
 func (c *HullCityConsumer) List(ctx context.Context) (*domain.HullArticles, error) {
 	uri := c.cfg.Consumer.HullConsumer.ListURL + "?count=" + strconv.Itoa(c.cfg.Consumer.HullConsumer.Count)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, nil)
@@ -95,6 +98,7 @@ func (c *HullCityConsumer) List(ctx context.Context) (*domain.HullArticles, erro
 	return hullArticles, nil
 }
 
+// Consume consumes feeds from the Hull City Fc external provider.
 func (c *HullCityConsumer) Consume(ctx context.Context) {
 	hullArticles, err := c.List(ctx)
 	if err != nil {
@@ -102,16 +106,38 @@ func (c *HullCityConsumer) Consume(ctx context.Context) {
 		return
 	}
 
+	jobs := make(chan domain.HullArticle, len(hullArticles.NewsletterNewsItems.NewsletterNewsItem))
+
+	if len(hullArticles.NewsletterNewsItems.NewsletterNewsItem) < maxWorkers {
+		maxWorkers = len(hullArticles.NewsletterNewsItems.NewsletterNewsItem)
+	}
+
+	// Start workers to process each article item.
+	for w := 0; w < maxWorkers; w++ {
+		go c.worker(ctx, jobs, hullArticles.ClubName, hullArticles.ClubWebsiteURL)
+	}
+
+	// Send each article item to the job channel.
 	for _, h := range hullArticles.NewsletterNewsItems.NewsletterNewsItem {
-		item, err := c.GetByID(ctx, h.NewsArticleID)
+		jobs <- h
+	}
+
+	close(jobs)
+}
+
+func (c *HullCityConsumer) worker(ctx context.Context, jobs <-chan domain.HullArticle, clubName, clubURL string) {
+	for j := range jobs {
+		c.logger.Debugf(ctx, "processing job for article %s", j.NewsArticleID)
+
+		item, err := c.GetByID(ctx, j.NewsArticleID)
 		if err != nil {
 			c.logger.Warn(ctx, err)
 			continue
 		}
 
-		a := h.ToDomain(
-			hullArticles.ClubName,
-			hullArticles.ClubWebsiteURL,
+		a := j.ToDomain(
+			clubName,
+			clubURL,
 			item.NewsArticle.BodyText,
 			item.NewsArticle.Subtitle,
 		)
