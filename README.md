@@ -1,6 +1,20 @@
 <h1 align="center">Sports News</h1>
 <p align="center">A microservice that processes data from external feed providers.</p>
----
+
+
+<p align="center">
+
+<a style="text-decoration: none" href="https://github.com/KarolosLykos/sportsnews/actions?query=workflow%3ABuild+workflow%3Abuild">
+<img src="https://img.shields.io/github/actions/workflow/status/KarolosLykos/sportsnews/build.yml?style=flat-square" alt="Build Status">
+</a>
+
+<a style="text-decoration: none" href="go.mod">
+<img src="https://img.shields.io/badge/Go-v1.19-blue?style=flat-square" alt="Go version">
+</a>
+
+<a href="https://codecov.io/gh/KarolosLykos/sportsnews" style="text-decoration: none">
+<img src="https://img.shields.io/codecov/c/github/KarolosLykos/sportsnews?color=magenta&style=flat-square"alt="Downloads">
+</a>
 
 ## Application Structure
 
