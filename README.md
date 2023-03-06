@@ -24,6 +24,7 @@
 - `Internal/article` folder contains interfaces and implementations to interact with the `article` domain.
 - `Internal/domain` folder contains the article model domain.
 ---
+
 ## Requirements
 - Go 1.19+
 ---
@@ -43,7 +44,7 @@
 
 - Local
 
-Run all containers
+Make sure you have mongo and redis running or run all containers
 ```shell
 make run-all
 ```
@@ -57,7 +58,7 @@ Clean
 make clean
 ```
 
-- Docker Compose
+- Alternatively, you can build and run a composed Docker setup.
 ```shell
 docker compose up --build -d
 ```
@@ -107,3 +108,12 @@ Example Response:
 }
 ```
 </details>
+
+### Assumptions/Extensions
+- Implemented the microservice using clean architecture design, to have a clear separation of the business logic and delivery mechanisms.
+- I decided to create workers for processing each article after getting the list of articles.
+- Probably I should not use hardcoded values (articlesCollection, maxWorkers,... etc).
+- Basic validation.
+- Didn't use transactions.
+- Added redis cache.
+- Unit testing using mocks for the different "adapters".

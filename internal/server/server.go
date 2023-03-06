@@ -104,7 +104,6 @@ func (s *Server) createHTTP(
 	e := echo.New()
 	e.Logger.SetOutput(io.Discard)
 	e.Use(middleware.Recover())
-	middleware.Logger()
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogStatus: true,
