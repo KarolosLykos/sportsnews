@@ -25,6 +25,8 @@
 - [github.com/go-redis/redis/v8](https://github.com/redis/go-redis) Redis go client
 
 ## Run Instructions
+*If you keep the default configuration the microservice should be running on port :8081*
+
 - Local
 
 Run all containers
@@ -50,6 +52,7 @@ Clean
 ```shell
 docker compose down
 ```
+
 ## Run tests
 ```shell
 make test
