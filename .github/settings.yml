@@ -2,7 +2,7 @@ _extends: .github
 
 repository:
     description: ⚽ A microservice that processes data from external feed providers.
-    homepage: https://github.com/KarolosLykos/sportnews
+    homepage: https://github.com/KarolosLykos/sportsnews
     topics: go, golang, grpc, mongodb, redis
     private: false
     
